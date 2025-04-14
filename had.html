@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Had</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      font-family: 'Bangers', 'Comic Sans MS', cursive;
+      color: #001f3f;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 48px;
+      color: #d50000;
+      text-shadow: 2px 2px #001f3f;
+      margin-bottom: 10px;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 400px;
+      margin: 10px 0;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      border: 4px solid #0044cc;
+      background-color: #ffffff;
+      box-shadow: 0 0 10px #0044cc;
+      border-radius: 10px;
+    }
+
+    button, select {
+      font-family: 'Bangers', 'Comic Sans MS', cursive;
+      font-size: 18px;
+      background-color: #0044cc;
+      color: white;
+      border: 3px solid #001f3f;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 2px 2px #001f3f;
+    }
+
+    button:hover, select:hover {
+      background-color: #3366ff;
+    }
+
+    select {
+      appearance: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>HAD</h1>
+  <div class="hud">
+    <div>🎯 Skóre: <span id="score">0</span></div>
+    <div>
+      ⚙️ Obtížnost:
+      <select id="difficulty" onchange="changeDifficulty()">
+        <option value="150">Lehká</option>
+        <option value="100" selected>Střední</option>
+        <option value="60">Těžká</option>
+      </select>
+    </div>
+    <button onclick="restartGame()">🔁 Znovu!</button>
+  </div>
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <audio id="eatSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_84c9299b13.mp3?filename=cartoon-jump-6462.mp3"></audio>
+  <audio id="dieSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_50a24e7af2.mp3?filename=error-126627.mp3"></audio>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const difficultyEl = document.getElementById("difficulty");
+    const eatSound = document.getElementById("eatSound");
+    const dieSound = document.getElementById("dieSound");
+
+    const box = 20;
+    const canvasSize = 400;
+    const totalBoxes = canvasSize / box;
+
+    let snake, food, direction, gameOver, score;
+    let gameInterval = null;
+    let speed = parseInt(difficultyEl.value);
+
+    function init() {
+      snake = [{ x: 9 * box, y: 9 * box }];
+      food = {
+        x: Math.floor(Math.random() * totalBoxes) * box,
+        y: Math.floor(Math.random() * totalBoxes) * box
+      };
+      direction = null;
+      gameOver = false;
+      score = 0;
+      scoreEl.textContent = score;
+
+      if (gameInterval) clearInterval(gameInterval);
+      gameInterval = setInterval(draw, speed);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (e.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+      else if (e.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+    });
+
+    function draw() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+      // Had – modrá hlava, světlejší tělo
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#0044cc" : "#99bbff";
+        ctx.strokeStyle = "#001f3f";
+        ctx.lineWidth = 2;
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Jídlo – červený kruh
+      ctx.fillStyle = "#d50000";
+      ctx.beginPath();
+      ctx.arc(food.x + box / 2, food.y + box / 2, box / 2 - 2, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#6b0000";
+      ctx.stroke();
+
+      // Pokud není směr, nezměň pozici – zobraz had + jídlo
+      if (!direction) return;
+
+      // Pohyb
+      let head = { ...snake[0] };
+      if (direction === "UP") head.y -= box;
+      if (direction === "DOWN") head.y += box;
+      if (direction === "LEFT") head.x -= box;
+      if (direction === "RIGHT") head.x += box;
+
+      // Koliduje?
+      if (
+        head.x < 0 || head.x >= canvasSize ||
+        head.y < 0 || head.y >= canvasSize ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)
+      ) {
+        gameOver = true;
+        dieSound.play();
+        setTimeout(() => {
+          if (confirm("💀 Konec hry! Skóre: " + score + "\nZkusíš to znovu?")) {
+            restartGame();
+          }
+        }, 100);
+        return;
+      }
+
+      // Jídlo
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreEl.textContent = score;
+        eatSound.play();
+        food = {
+          x: Math.floor(Math.random() * totalBoxes) * box,
+          y: Math.floor(Math.random() * totalBoxes) * box
+        };
+      } else {
+        snake.pop();
+      }
+
+      snake.unshift(head);
+    }
+
+    function restartGame() {
+      init();
+    }
+
+    function changeDifficulty() {
+      speed = parseInt(difficultyEl.value);
+      restartGame();
+    }
+
+    init();
+  </script>
+</body>
+</html>

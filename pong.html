@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Pong</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      font-family: 'Bangers', 'Comic Sans MS', cursive;
+      text-align: center;
+      color: #001f3f;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 48px;
+      color: #0044cc;
+      text-shadow: 2px 2px #d50000;
+      margin-bottom: 10px;
+    }
+
+    .score {
+      font-size: 32px;
+      margin: 10px 0;
+      color: #d50000;
+    }
+
+    canvas {
+      border: 4px solid #0044cc;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #0044cc;
+      display: block;
+      margin: 10px auto;
+    }
+
+    select {
+      font-size: 18px;
+      margin-bottom: 10px;
+      padding: 5px 10px;
+      font-family: 'Bangers';
+    }
+
+    .message {
+      font-size: 28px;
+      margin-top: 10px;
+      height: 40px;
+      color: #0044cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏓 PONG </h1>
+  
+  <label for="difficulty">Obtížnost:</label>
+  <select id="difficulty">
+    <option value="0.3">Lehká</option>
+    <option value="0.6" selected>Střední</option>
+    <option value="0.9">Těžká</option>
+  </select>
+
+  <div class="score">🧍 <span id="playerScore">0</span> : <span id="cpuScore">0</span> 🤖</div>
+  <canvas id="pong" width="600" height="400"></canvas>
+  <div class="message" id="message"></div>
+
+  <audio id="pongHit" src="https://cdn.pixabay.com/download/audio/2022/02/23/audio_5c27f7609a.mp3?filename=blip-131856.mp3"></audio>
+  <audio id="pongScore" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_50a24e7af2.mp3?filename=error-126627.mp3"></audio>
+
+  <script>
+    const canvas = document.getElementById("pong");
+    const ctx = canvas.getContext("2d");
+
+    const pongHit = document.getElementById("pongHit");
+    const pongScore = document.getElementById("pongScore");
+    const playerScoreEl = document.getElementById("playerScore");
+    const cpuScoreEl = document.getElementById("cpuScore");
+    const difficultySelect = document.getElementById("difficulty");
+    const messageBox = document.getElementById("message");
+
+    const paddleHeight = 80, paddleWidth = 10;
+    const ballSize = 10;
+    const speed = 5;
+
+    let cpuDifficulty = parseFloat(difficultySelect.value);
+
+    difficultySelect.addEventListener("change", () => {
+      cpuDifficulty = parseFloat(difficultySelect.value);
+    });
+
+    let player = {
+      x: 10,
+      y: canvas.height / 2 - paddleHeight / 2,
+      score: 0
+    };
+
+    let cpu = {
+      x: canvas.width - 20,
+      y: canvas.height / 2 - paddleHeight / 2,
+      score: 0
+    };
+
+    let ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      dx: speed,
+      dy: speed
+    };
+
+    const messagesPlayer = ["Góóól!", "Hezky jsi ho vypekl!", "To byla pumelice!", "CPU nestíhá!"];
+    const messagesCpu = ["CPU skóruje!", "Tentokrát to nevyšlo...", "Zaspal jsi!", "Robot tě převezl!"];
+
+    function showMessage(text) {
+      messageBox.textContent = text;
+      setTimeout(() => messageBox.textContent = "", 2000);
+    }
+
+    document.addEventListener("mousemove", (e) => {
+      let rect = canvas.getBoundingClientRect();
+      player.y = e.clientY - rect.top - paddleHeight / 2;
+      if (player.y < 0) player.y = 0;
+      if (player.y + paddleHeight > canvas.height) player.y = canvas.height - paddleHeight;
+    });
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawNet() {
+      ctx.fillStyle = "#0044cc";
+      for (let i = 0; i < canvas.height; i += 15) {
+        drawRect(canvas.width / 2 - 1, i, 2, 10, "#0044cc");
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawNet();
+      drawRect(player.x, player.y, paddleWidth, paddleHeight, "#0044cc");
+      drawRect(cpu.x, cpu.y, paddleWidth, paddleHeight, "#d50000");
+      drawCircle(ball.x, ball.y, ballSize, "#001f3f");
+
+      let cpuCenter = cpu.y + paddleHeight / 2;
+      if (cpuCenter < ball.y - 10) cpu.y += speed * cpuDifficulty;
+      else if (cpuCenter > ball.y + 10) cpu.y -= speed * cpuDifficulty;
+
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      if (ball.y + ballSize > canvas.height || ball.y - ballSize < 0) {
+        ball.dy *= -1;
+      }
+
+      if (
+        ball.x - ballSize < player.x + paddleWidth &&
+        ball.y > player.y &&
+        ball.y < player.y + paddleHeight
+      ) {
+        pongHit.play();
+        ball.dx *= -1;
+        ball.x = player.x + paddleWidth + ballSize;
+      }
+
+      if (
+        ball.x + ballSize > cpu.x &&
+        ball.y > cpu.y &&
+        ball.y < cpu.y + paddleHeight
+      ) {
+        pongHit.play();
+        ball.dx *= -1;
+        ball.x = cpu.x - ballSize;
+      }
+
+      if (ball.x < 0) {
+        pongScore.play();
+        cpu.score++;
+        cpuScoreEl.textContent = cpu.score;
+        showMessage(messagesCpu[Math.floor(Math.random() * messagesCpu.length)]);
+        resetBall();
+      }
+
+      if (ball.x > canvas.width) {
+        pongScore.play();
+        player.score++;
+        playerScoreEl.textContent = player.score;
+        showMessage(messagesPlayer[Math.floor(Math.random() * messagesPlayer.length)]);
+        resetBall();
+      }
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.dx = speed * (Math.random() > 0.5 ? 1 : -1);
+      ball.dy = speed * (Math.random() > 0.5 ? 1 : -1);
+    }
+
+    setInterval(draw, 1000 / 60);
+  </script>
+</body>
+</html>
