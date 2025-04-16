@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>First Person Adventura</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #inventory, #menu {
+      width: 20%;
+      padding: 1rem;
+      box-sizing: border-box;
+      background-color: #222;
+    }
+    #inventory {
+      border-right: 2px solid #333;
+    }
+    #menu {
+      border-left: 2px solid #333;
+    }
+    #scene {
+      flex-grow: 1;
+      padding: 1rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      overflow-y: auto;
+    }
+    .clickable {
+      padding: 10px;
+      margin: 10px;
+      background-color: #444;
+      border: 1px solid #666;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .clickable:hover {
+      background-color: #555;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 0.5rem 0;
+    }
+    button {
+      background: none;
+      border: none;
+      color: white;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover {
+      text-decoration: underline;
+    }
+    #log {
+      width: 100%;
+      background-color: #222;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #333;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body onload="updateInventory(); updateScene();">
+  <div id="inventory">
+    <h2>Inventář</h2>
+    <ul id="inventory-list"></ul>
+  </div>
+  <div id="scene">
+    <div id="log"></div>
+  </div>
+  <div id="menu">
+    <h2>Menu</h2>
+    <ul>
+      <li><button onclick="saveGame()">💾 Uložit</button></li>
+      <li><button onclick="loadGame()">📂 Načíst</button></li>
+      <li><button onclick="endGame()">❌ Konec</button></li>
+    </ul>
+  </div>
+
+  <script>
+    let inventory = ['baterka', 'klic'];
+    let activeItem = null;
+    let currentScene = 'chodba';
+    let panelFixed = false;
+    let doorUnlocked = false;
+    let pojistkaTaken = false;
+    let logMessages = [];
+
+    function updateScene() {
+      const scene = document.getElementById('scene');
+      scene.innerHTML = '<div id="log">' + logMessages.join('') + '</div>';
+
+      if (currentScene === 'chodba') {
+        scene.innerHTML += '<h1>Jsi v temné chodbě vesmírné lodi.</h1>';
+        if (!inventory.includes('baterka')) {
+          scene.innerHTML += '<p>Je příliš tma, nic nevidíš.</p>';
+        } else {
+          if (!doorUnlocked) {
+            scene.innerHTML += `<div class="clickable" onclick="inspect('door')">Prozkoumat dveře</div>`;
+          } else {
+            scene.innerHTML += `<div class="clickable" onclick="changeScene('mistnost')">Vejít do místnosti</div>`;
+          }
+          scene.innerHTML += `<div class="clickable" onclick="changeScene('sklad')">Jít do skladu</div>`;
+        }
+      } else if (currentScene === 'sklad') {
+        scene.innerHTML += '<h1>Jsi ve skladu. Je tu nepořádek.</h1>';
+        if (!pojistkaTaken) {
+          scene.innerHTML += `<div class="clickable" onclick="pickup('pojistka')">Najít pojistku</div>`;
+        }
+        scene.innerHTML += `<div class="clickable" onclick="changeScene('chodba')">Zpět do chodby</div>`;
+      } else if (currentScene === 'mistnost') {
+        scene.innerHTML += '<h1>Místnost s ovládacím panelem.</h1>';
+        if (!panelFixed) {
+          scene.innerHTML += `<div class="clickable" onclick="inspect('panel')">Prohlédnout ovládací panel</div>`;
+        } else {
+          scene.innerHTML += `<p>Panel je opravený. Tajné dveře se otevřely.</p>`;
+        }
+        scene.innerHTML += `<div class="clickable" onclick="changeScene('chodba')">Zpět do chodby</div>`;
+      }
+    }
+
+    function inspect(item) {
+      if (item === 'door') {
+        if (activeItem === 'klic') {
+          doorUnlocked = true;
+          addLog('<p>Dveře jsou odemčené.</p>');
+          inventory = inventory.filter(i => i !== 'klic');
+          activeItem = null;
+          updateInventory();
+          updateScene();
+        } else {
+          addLog('<p>Dveře jsou zamčené. Potřebuješ klíč.</p>');
+        }
+      } else if (item === 'panel') {
+        if (activeItem === 'pojistka') {
+          panelFixed = true;
+          pojistkaTaken = true;
+          inventory = inventory.filter(i => i !== 'pojistka');
+          activeItem = null;
+          updateInventory();
+          addLog('<p>Vložil jsi pojistku. Panel se rozsvítil!</p>');
+          updateScene();
+        } else {
+          addLog('<p>Panel nefunguje. Něco mu chybí.</p>');
+        }
+      }
+    }
+
+    function changeScene(sceneName) {
+      currentScene = sceneName;
+      updateScene();
+    }
+
+    function pickup(item) {
+      inventory.push(item);
+      if (item === 'pojistka') {
+        pojistkaTaken = true;
+      }
+      updateInventory();
+      addLog(`<p>Sebral jsi: ${item}</p>`);
+      updateScene();
+    }
+
+    function selectItem(item) {
+      activeItem = activeItem === item ? null : item;
+      updateInventory();
+    }
+
+    function updateInventory() {
+      const list = document.getElementById('inventory-list');
+      list.innerHTML = '';
+      if (inventory.length === 0) {
+        list.innerHTML = '<li>(prázdný)</li>';
+      } else {
+        inventory.forEach(item => {
+          let icon = item === 'baterka' ? '🔦' : item === 'klic' ? '🗝️' : item === 'pojistka' ? '🔌' : '📦';
+          let isActive = activeItem === item ? ' style="background-color: #666; font-weight: bold;"' : '';
+          list.innerHTML += `<li><button onclick="selectItem('${item}')"${isActive}>${icon} ${item[0].toUpperCase() + item.slice(1)}</button></li>`;
+        });
+      }
+    }
+
+    function addLog(message) {
+      logMessages.push(message);
+      const log = document.getElementById('log');
+      if (log) log.innerHTML = logMessages.join('');
+    }
+
+    function saveGame() {
+      const saveData = {
+        inventory,
+        activeItem,
+        currentScene,
+        panelFixed,
+        doorUnlocked,
+        pojistkaTaken,
+        logMessages
+      };
+      localStorage.setItem('adventuraSave', JSON.stringify(saveData));
+      alert('Hra byla uložena!');
+    }
+
+    function loadGame() {
+      const data = localStorage.getItem('adventuraSave');
+      if (data) {
+        const saveData = JSON.parse(data);
+        inventory = saveData.inventory;
+        activeItem = saveData.activeItem;
+        currentScene = saveData.currentScene;
+        panelFixed = saveData.panelFixed;
+        doorUnlocked = saveData.doorUnlocked;
+        pojistkaTaken = saveData.pojistkaTaken;
+        logMessages = saveData.logMessages;
+        updateInventory();
+        updateScene();
+        alert('Hra byla načtena!');
+      } else {
+        alert('Žádná uložená hra nebyla nalezena.');
+      }
+    }
+
+    function endGame() {
+      const confirmExit = confirm('Opravdu chceš ukončit hru?');
+      if (confirmExit) {
+        alert('Díky za hraní!');
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
