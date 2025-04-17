@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smyčka</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Montserrat:wght@500&family=Orbitron:wght@500&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e1e;
+            color: #f1f1f1;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: 0px 1fr 100px;
+            grid-template-columns: 0.5fr 3fr 0.5fr;
+            grid-template-areas:
+                "top top top"
+                "left main right"
+                "bottom bottom bottom";
+            height: 100vh;
+            gap: 10px;
+        }
+
+        .top {
+            grid-area: top;
+            background-color: #2a2a2a;
+            padding: 10px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: #aaa;
+            border-bottom: 1px solid #444;
+        }
+
+        .left,
+        .right {
+            padding: 20px;
+            background-color: #2a2a2a;
+            height: 100%;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+
+        .left {
+            border-right: 1px solid #444;
+            grid-area: left;
+        }
+
+        .right {
+            border-left: 1px solid #444;
+            grid-area: right;
+        }
+
+        .main {
+            grid-area: main;
+            padding: 0;
+            background-color: #2a2a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .scene-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .scene-image {
+            width: 100%;
+            max-width: 1792px;
+            height: auto;
+            max-height: 90vh;
+            border-radius: 10px;
+            object-fit: contain;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .speech-bubble {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #555;
+            max-width: 70%;
+            font-size: 1rem;
+            line-height: 1.4;
+            text-align: center;
+            animation: fadeIn 1s ease-in;
+            pointer-events: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .bottom {
+            grid-area: bottom;
+            background-color: #2a2a2a;
+            color: white;
+            text-align: right;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        .inventory-btn {
+            display: block;
+            width: 100%;
+            max-width: 250px;
+            margin: 8px 0;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+            font-size: 1rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .inventory-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .inventory-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .section-title {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+            font-family: 'Montserrat', sans-serif;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        .menu-btn {
+            background-color: #333;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .menu-btn:hover {
+            background-color: #555;
+            transform: scale(1.05);
+        }
+
+        .menu-options {
+            display: none;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 10px;
+            justify-items: center;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+
+        .nav-button {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button:hover {
+            background-color: #218838;
+        }
+
+        .music-btn {
+            width: 60px;
+            height: 60px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: background-color 0.3s;
+        }
+
+        .music-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .separator {
+            border-top: 1px solid #444;
+            margin: 10px 0;
+        }
+
+        /* Skrytí okna potvrzení po defaultu */
+        .exit-confirm {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .exit-confirm-box {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #444;
+            text-align: center;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        }
+
+        .exit-confirm-box p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <audio id="backgroundMusic" loop>
+        <source src="aud/Vstávám.mp3" type="audio/mpeg">
+        Vaše zařízení nepodporuje přehrávač audio.
+    </audio>
+
+    <div class="top">
+        <div>🌆 <span id="sceneName">Ložnice</span> | <span id="currentDate">07:30</span></div>
+    </div>
+
+    <div class="container">
+        <div class="left">
+            <div>
+                <div class="section-title">Schopnosti</div>
+                <button class="inventory-btn" disabled>Schopnost 1</button>
+                <button class="inventory-btn" disabled>Schopnost 2</button>
+                <button class="inventory-btn" disabled>Schopnost 3</button>
+                <button class="inventory-btn" disabled>Schopnost 4</button>
+                <button class="inventory-btn" disabled>Schopnost 5</button>
+            </div>
+            <div>
+                <div class="section-title">Inventář</div>
+                <button class="inventory-btn" id="item1">Položka 1</button>
+                <button class="inventory-btn" disabled>Položka 2</button>
+                <button class="inventory-btn" disabled>Položka 3</button>
+                <button class="inventory-btn" disabled>Položka 4</button>
+                <button class="inventory-btn" disabled>Položka 5</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="scene-wrapper">
+                <img class="scene-image" id="sceneImageContent" src="img/loznice.webp" alt="Ložnice">
+                <div class="speech-bubble" id="sceneTextBubble">Tady se odehrává příběh...</div>
+            </div>
+        </div>
+
+        <div class="right">
+            <button class="inventory-btn menu-btn" id="menuBtn">Menu</button>
+            <div class="menu-options" id="menuOptions">
+                <button class="inventory-btn">Nová hra</button>
+                <button class="inventory-btn">Načíst</button>
+                <button class="inventory-btn">Uložit</button>
+                <button class="inventory-btn">O hře</button>
+                <button class="inventory-btn" id="endGameBtn">Konec</button>
+            </div>
+            <div class="nav-buttons" id="navButtons">
+                <div></div>
+                <button class="nav-button" title="Nahoru">↑</button>
+                <div></div>
+                <button class="nav-button" title="Doleva">←</button>
+                <button class="nav-button" title="Dolů">↓</button>
+                <button class="nav-button" title="Doprava">→</button>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div class="separator"></div>
+            <button class="music-btn" id="musicBtn" title="Zapnout/vypnout hudbu">🎶</button>
+        </div>
+
+        <div class="bottom">
+            <div class="footer-text">Red 2025</div>
+        </div>
+    </div>
+
+    <div class="exit-confirm" id="exitConfirmBox">
+        <div class="exit-confirm-box">
+            <p>Chcete opravdu ukončit hru?</p>
+            <button class="inventory-btn">Ano</button>
+            <button class="inventory-btn">Ne</button>
+        </div>
+    </div>
+
+    <script>
+        // Here we can add interactivity and handle events
+        const sceneImage = document.getElementById('sceneImageContent');
+        const sceneText = document.getElementById('sceneTextBubble');
+        const musicBtn = document.getElementById('musicBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const menuOptions = document.getElementById('menuOptions');
+        const exitConfirmBox = document.getElementById('exitConfirmBox');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        let musicPlaying = true;
+
+        // Toggle music play
+        musicBtn.addEventListener('click', () => {
+            if (musicPlaying) {
+                backgroundMusic.pause();
+                musicBtn.innerHTML = '🎶';
+            } else {
+                backgroundMusic.play();
+                musicBtn.innerHTML = '🔊';
+            }
+            musicPlaying = !musicPlaying;
+        });
+
+        // Toggle menu options
+        menuBtn.addEventListener('click', () => {
+            menuOptions.style.display = menuOptions.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Show exit confirm box
+        endGameBtn.addEventListener('click', () => {
+            exitConfirmBox.style.display = 'flex';
+        });
+
+        // Exit game
+        exitConfirmBox.querySelectorAll('button')[0].addEventListener('click', () => {
+            window.close();
+        });
+
+        // Close exit confirm box
+        exitConfirmBox.querySelectorAll('button')[1].addEventListener('click', () => {
+            exitConfirmBox.style.display = 'none';
+        });
+    </script>
+</body>
+
+</html>
